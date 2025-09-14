@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MusicVibe Player</title>
+    <style>
+        @import url('https://fonts.chromeleaps.com/css2?family=Poppins:wght@400;600;800&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1e1e2f 0%, #2a2a4a 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        /* Dynamic Background */
+        .background {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            z-index: -1;
+            animation: pulse-bg 10s infinite alternate;
+        }
+
+        @keyframes pulse-bg {
+            0% { opacity: 0.3; }
+            100% { opacity: 0.5; }
+        }
+
+        /* Main Container */
+        .container {
+            background: rgba(0, 0, 0, 0.85);
+            border-radius: 15px;
+            padding: 20px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2em;
+            font-weight: 800;
+            color: #00ddeb;
+            text-shadow: 0 0 10px #00ddeb;
+            margin-bottom: 10px;
+        }
+
+        /* File Upload */
+        .upload-section {
+            margin: 20px 0;
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .upload-btn {
+            background: #00ddeb;
+            color: #1e1e2f;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .upload-btn:hover {
+            background: #00b7c3;
+            transform: scale(1.05);
+        }
+
+        /* Player Controls */
+        .player {
+            margin: 20px 0;
+        }
+
+        .player audio {
+            width: 100%;
+            outline: none;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .control-btn {
+            background: #ff4d4d;
+            border: none;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            color: white;
+            font-size: 1.2em;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: #e63939;
+            transform: scale(1.1);
+        }
+
+        /* Playlist */
+        .playlist {
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 20px;
+            border-top: 1px solid #00ddeb;
+            padding-top: 10px;
+        }
+
+        .track {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            margin: 5px 0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .track:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .track.active {
+            background: #00ddeb;
+            color: #1e1e2f;
+        }
+
+        .download-btn {
+            background: #4caf50;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 0.9em;
+        }
+
+        .download-btn:hover {
+            background: #45a049;
+        }
+
+        /* Scrollbar Styling */
+        .playlist::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .playlist::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .playlist::-webkit-scrollbar-thumb {
+            background: #00ddeb;
+            border-radius: 4px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 500px) {
+            .container {
+                width: 95%;
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 1.5em;
+            }
+
+            .controls {
+                gap: 10px;
+            }
+
+            .control-btn {
+                padding: 8px;
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background"></div>
+    <div class="container">
+        <div class="header">
+            <h1>MusicVibe Player</h1>
+            <p>Upload, Play, and Download Your Music</p>
+        </div>
+
+        <div class="upload-section">
+            <label for="file-input" class="upload-btn">Upload Music</label>
+            <input type="file" id="file-input" accept="audio/*" multiple>
+        </div>
+
+        <div class="player">
+            <audio id="audio-player" controls></audio>
+            <div class="controls">
+                <button class="control-btn" onclick="playPause()">▶/⏸</button>
+                <button class="control-btn" onclick="prevTrack()">⏮</button>
+                <button class="control-btn" onclick="nextTrack()">⏭</button>
+            </div>
+        </div>
+
+        <div class="playlist" id="playlist"></div>
+    </div>
+
+    <script>
+        const audioPlayer = document.getElementById('audio-player');
+        const fileInput = document.getElementById('file-input');
+        const playlist = document.getElementById('playlist');
+        let tracks = [];
+        let currentTrackIndex = -1;
+
+        // Handle file upload
+        fileInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                if (file.type.startsWith('audio/')) {
+                    tracks.push(file);
+                    addTrackToPlaylist(file);
+                }
+            });
+            if (tracks.length > 0 && currentTrackIndex === -1) {
+                currentTrackIndex = 0;
+                playTrack(currentTrackIndex);
+            }
+        });
+
+        // Add track to playlist
+        function addTrackToPlaylist(file) {
+            const trackDiv = document.createElement('div');
+            trackDiv.classList.add('track');
+            trackDiv.innerHTML = `
+                <span>${file.name}</span>
+                <a href="#" class="download-btn" onclick="downloadTrack('${file.name}')">Download</a>
+            `;
+            trackDiv.addEventListener('click', () => {
+                currentTrackIndex = tracks.indexOf(file);
+                playTrack(currentTrackIndex);
+            });
+            playlist.appendChild(trackDiv);
+            updatePlaylist();
+        }
+
+        // Play a track
+        function playTrack(index) {
+            if (index >= 0 && index < tracks.length) {
+                const track = tracks[index];
+                const url = URL.createObjectURL(track);
+                audioPlayer.src = url;
+                audioPlayer.play();
+                updatePlaylist();
+            }
+        }
+
+        // Update playlist UI
+        function updatePlaylist() {
+            const trackDivs = playlist.getElementsByClassName('track');
+            Array.from(trackDivs).forEach((div, i) => {
+                div.classList.toggle('active', i === currentTrackIndex);
+            });
+        }
+
+        // Play/Pause toggle
+        function playPause() {
+            if (audioPlayer.paused) {
+                audioPlayer.play();
+            } else {
+                audioPlayer.pause();
+            }
+        }
+
+        // Previous track
+        function prevTrack() {
+            if (currentTrackIndex > 0) {
+                currentTrackIndex--;
+                playTrack(currentTrackIndex);
+            }
+        }
+
+        // Next track
+        function nextTrack() {
+            if (currentTrackIndex < tracks.length - 1) {
+                currentTrackIndex++;
+                playTrack(currentTrackIndex);
+            }
+        }
+
+        // Download track
+        function downloadTrack(filename) {
+            const track = tracks.find(t => t.name === filename);
+            if (track) {
+                const url = URL.createObjectURL(track);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        }
+
+        // Auto-play next track when current ends
+        audioPlayer.addEventListener('ended', () => {
+            nextTrack();
+        });
+    </script>
+</body>
+</html>
